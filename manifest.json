@@ -1,0 +1,19 @@
+{
+  "name": "Page Snooze",
+  "version": "1.1",
+  "description": "",
+  "background_page": "background.html",
+  "options_page": "options.html",
+  "browser_action": {
+    "default_icon": "clock48.png",
+    "name": "Snooze one week! View options for snoozing list"
+  },
+  "permissions": [
+    "contextMenus"
+  ],
+  "icons": {
+    "16": "clock16.png",
+    "48": "clock48.png",
+    "128": "Clock.png"
+  }
+}

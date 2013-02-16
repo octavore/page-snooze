@@ -1,0 +1,105 @@
+<script>
+  // init
+  if (!localStorage['pagesnooze_keys']) {
+    localStorage.setItem('pagesnooze_keys', JSON.stringify([]));
+  }
+  
+  if (!localStorage['pagesnooze_links']) {
+    localStorage.setItem('pagesnooze_links', JSON.stringify({}));
+  }
+  
+  // Called when the user clicks on the browser action.
+  chrome.browserAction.onClicked.addListener(function(tab) {
+    snooze(tab, 7);
+    alert('Snoozed page for 1 week!');
+  });
+  
+  function snooze(tab, days) {
+    var keys  = JSON.parse(localStorage['pagesnooze_keys']);
+    var links = JSON.parse(localStorage['pagesnooze_links']);
+    
+    if (!keys) { keys = []; }
+    if (!links) { links = {}; }
+     
+    chrome.tabs.remove(tab.id);
+    var key = (Date.now()*1 + days*86400000) + '';
+    keys.push(key);
+    
+    if (!links[key]) {
+      links[key] = [];
+    }
+    links[key].push({
+      url: tab.url,
+      title: tab.title,
+      favicon: tab.favIconUrl
+    });
+    
+    chrome.browserAction.setBadgeText({text: (keys.length > 0) ? keys.length+'' : ''});
+    localStorage.setItem('pagesnooze_keys', JSON.stringify(keys.sort()));
+    localStorage.setItem('pagesnooze_links', JSON.stringify(links));
+  }
+  
+  function popper() {
+    var keys  = JSON.parse(localStorage['pagesnooze_keys']);
+    var links = JSON.parse(localStorage['pagesnooze_links']);
+    
+    if (!keys) { keys = []; }
+    if (!links) { links = {}; }
+    
+    var time = Date.now()*1 + '';
+    
+    var nextKeys = keys.slice(0);
+    
+    for (i in keys) {
+      var key = keys[i]
+      if (key < time) {
+        for (j in links[key]) {
+          chrome.tabs.create({
+            url: links[key][j].url
+          })
+        }
+        nextKeys.shift();
+        delete links[key];
+      } else {
+        break;
+      }
+    }
+    
+    // wrap up
+    chrome.browserAction.setBadgeText({text: (nextKeys.length > 0) ? nextKeys.length+'' : ''});
+    localStorage.setItem('pagesnooze_keys', JSON.stringify(nextKeys.sort()));
+    localStorage.setItem('pagesnooze_links', JSON.stringify(links));
+  }
+  
+  for (i=1;i < 7; i++) {
+    (function(j) {
+      chrome.contextMenus.create({
+        title: 'Snooze for '+j+' day' + (j>1?"s":""),
+        onclick: function(info, tab) {
+          snooze(tab, j);
+        }
+      })
+    })(i);
+  }
+  
+  for (i=1;i < 3; i++) {
+    (function(j) {
+      chrome.contextMenus.create({
+        title: 'Snooze for '+j+' week'+ (j>1?"s":""),
+        onclick: function(info, tab) {
+          snooze(tab, j*7);
+        }
+      })
+    })(i);
+  }
+  
+  chrome.contextMenus.create({
+    title: 'Snooze for ~5 seconds',
+    onclick: function(info, tab) {
+      snooze(tab, 5000/86400000)
+    }
+  })
+  
+
+  window.setInterval(popper, 3000);
+</script>

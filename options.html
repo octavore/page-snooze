@@ -1,0 +1,165 @@
+<html>
+<head>
+  <title>Page Snooze Options</title>
+  <style type="text/css" media="screen">
+    html, body {
+      background: #eee;
+    }
+    body {
+      font-family: 'Helvetica', 'Arial', sans-serif;
+    }
+
+    #container {
+      min-height: 300px;
+      margin: 30px auto;
+      padding: 15px 20px;
+      background: white;
+      width: 720px;
+      border: 1px solid #ddd;
+      overflow: hidden;
+    }
+    h2 { margin: 0; }
+    #saved_links { display: none; width: 100%; border-collapse:collapse;border-spacing:0;}
+    #saved_links tr:nth-child(2n) { background: #fafafa; }
+    #saved_links td { padding: 3px; }
+    #saved_links .cell_clear a { text-decoration:none; font-size: 131%; font-weight: bold; color: #888 }
+    #saved_links .cell_clear a:hover { color: #540F0C }
+
+    #saved_links #cell_date_title { font-size: 10px; }
+    #saved_links .cell_date { width: 150px; font-size: 93%; color: #777}
+
+    #clear_all { margin-top: 10px; float: right; display: block; font-size: 93%; padding: 8px 16px}
+    .button{text-decoration:none;display:block;color:#555;border:1px solid #ddd;text-align:center;cursor:pointer;padding:5px 10px;-moz-border-radius:3px;-webkit-border-radius:3px;border-radius:3px;background:#ffffff;background:-moz-linear-gradient(top, #ffffff 0%, #eeeeee 100%);background:-webkit-linear-gradient(top, #ffffff 0%, #eeeeee 100%);background:-o-linear-gradient(top, #ffffff 0%, #eeeeee 100%);background:-ms-linear-gradient(top, #ffffff 0%, #eeeeee 100%);background:linear-gradient(top, #ffffff 0%, #eeeeee 100%);-webkit-transition:all 100ms ease-in-out;-moz-transition:all 100ms ease-in-out;-o-transition:all 100ms ease-in-out;transition:all 100ms ease-in-out;}
+    .button:hover{color:black;border-color:#999;}
+  </style>
+</head>
+<script type="text/javascript">
+
+// Array Remove - By John Resig (MIT Licensed)
+Array.prototype.remove = function(from, to) {
+  var rest = this.slice((to || from) + 1 || this.length);
+  this.length = from < 0 ? this.length + from : from;
+  return this.push.apply(this, rest);
+};
+
+// http://sajjadhossain.com/2008/10/31/javascript-string-trimming-and-padding/
+String.prototype.lpad = function(padString, length) {
+  var str = this;
+  while (str.length < length)
+    str = padString + str;
+  return str;
+}
+
+// Restores select box state to saved value from localStorage.
+function restore_options() {
+  var keys  = JSON.parse(localStorage['pagesnooze_keys']);
+  var links = JSON.parse(localStorage['pagesnooze_links']);
+  if (!keys || keys.length == 0) {
+    return;
+  }
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var linkArray = links[key];
+
+    var tr = document.createElement('tr');
+    var td_img = document.createElement('td');
+    var td_title = document.createElement('td');
+    var td_date = document.createElement('td');
+    var td_clear = document.createElement('td');
+
+    if (linkArray[0].favicon) {
+      var img = document.createElement('img');
+      img.setAttribute('src', linkArray[0].favicon);
+      img.setAttribute('width', 16);
+      img.setAttribute('height', 16);
+      td_img.appendChild(img);
+    }
+
+    var a = document.createElement('a');
+    a.setAttribute('href', linkArray[0].url);
+    var link = document.createTextNode(linkArray[0].title);
+    a.appendChild(link);
+
+    var b = document.createElement('a');
+    b.setAttribute('onclick', 'snooze_clear(\''+key+'\',\''+linkArray[0].url+'\');return false;');
+    b.setAttribute('href', '');
+    var t = document.createTextNode("\u00D7");
+    b.appendChild(t);
+
+    var d = new Date(key*1);
+    var month = d.getMonth() == 11 ? 12 : (d.getMonth() + 1 % 12);
+    var hours = d.getHours() == 0  ? 12 : (d.getHours() % 12);
+    var date = document.createTextNode(
+      month +"/"+d.getDate()+" "+ hours +':'+(d.getMinutes()+'').lpad('0', 2)+(d.getHours() > 11?'pm':'am')
+    );
+
+    td_title.appendChild(a);
+    td_date.appendChild(date);
+    td_date.setAttribute('class', 'cell_date');
+    td_clear.appendChild(b)
+    td_clear.setAttribute('class','cell_clear');
+    tr.appendChild(td_img);
+    tr.appendChild(td_title);
+    tr.appendChild(td_date);
+    tr.appendChild(td_clear);
+
+    var table = document.getElementById('saved_links');
+    table.appendChild(tr);
+    table.style.display = 'block';
+  }
+}
+
+function snooze_clear(date, link) {
+  var keys  = JSON.parse(localStorage['pagesnooze_keys']);
+  var links = JSON.parse(localStorage['pagesnooze_links']);
+
+  if ((d = keys.indexOf(date)) >= 0) {
+    var linkArray = links[date];
+    var newLinkArray = linkArray.slice(0);
+    for (j=0;j<linkArray.length;j++) {
+      var l = linkArray[j];
+      if (l.url == link) {
+        newLinkArray.remove(j);
+      }
+    }
+
+    if (newLinkArray.length == 0) {
+      keys.remove(d);
+      delete links[date];
+    } else {
+      links[date] = newLinkArray;
+    }
+  }
+
+  localStorage.setItem('pagesnooze_keys', JSON.stringify(keys));
+  localStorage.setItem('pagesnooze_links', JSON.stringify(links));
+  window.location.reload();
+}
+
+function clearAll() {
+  if(confirm('Are you sure you want to clear all snoozed pages?')) {
+    localStorage.setItem('pagesnooze_keys', JSON.stringify([]));
+    localStorage.setItem('pagesnooze_links', JSON.stringify({}));
+    window.location.reload();
+  }
+}
+
+</script>
+
+<body onload="restore_options()">
+<div id='container'>
+  <h2>Snoozed Links</h2>
+  <p>
+    Page Snooze is a great way to manage tab overload! You can click the icon in the toolbar to snooze a page for a week, or right-click and choose a more specific snooze duration.
+  </p>
+  <table id='saved_links'>
+    <tr>
+      <td colspan='2'></td>
+      <td id='cell_date_title' class='cell_date'>Unsnooze at&hellip;</td>
+    </tr>
+  </table>
+  <a href='' id='clear_all' class='button' onclick='clearAll();return false'>Clear All</a>
+  </div>
+</body>
+</html>

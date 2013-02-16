@@ -1,0 +1,31 @@
+<html>
+  <head>
+    <script type="text/javascript" charset="utf-8">
+      chrome.tabs.getSelected(-1, function(tab) {
+        var keys  = JSON.parse(localStorage['pagesnooze_keys']);
+        var links = JSON.parse(localStorage['pagesnooze_links']);
+
+        if (!keys) { keys = []; }
+        if (!links) { links = {}; }
+
+        chrome.tabs.remove(tab.id);
+        // 1 week snooze: 604800000
+        var key = (Date.now()*1 + 604800000) + '';
+        keys.push(key);
+
+        if (!links[key]) {
+          links[key] = [];
+        }
+        links[key].push({
+          url: tab.url,
+          title: tab.title,
+          favicon: tab.favIconUrl
+        });
+
+        localStorage.setItem('pagesnooze_keys', JSON.stringify(keys.sort()));
+        localStorage.setItem('pagesnooze_links', JSON.stringify(links));
+      })
+      
+    </script>
+  </head>
+</html>
